@@ -3,16 +3,21 @@ import { AppController } from './app.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { HttpTaskModule } from './http-task/http-task.module';
 import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
+import bullConfig from './configs/bull.config';
 
 @Module({
   imports: [
     HttpModule,
-    BullModule.forRoot({
-      connection: {
-        host: 'redisurl',
-        port: 3000,
-        username: 'default',
-        password: 'password',
+    ConfigModule.forRoot({
+      load: [bullConfig],
+    }),
+    BullModule.forRootAsync({
+      useFactory: () => {
+        const { host, port, username, password } = bullConfig();
+        return {
+          connection: { host, port: +port, username, password },
+        };
       },
     }),
     HttpTaskModule,
