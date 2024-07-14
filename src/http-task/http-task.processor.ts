@@ -3,7 +3,7 @@ import { Job } from 'bullmq';
 import { HttpTaskDto } from './http-task.dto';
 import { HttpService } from '@nestjs/axios';
 import { AxiosRequestConfig } from 'axios';
-import { delay, firstValueFrom, map, of, race, throwError } from 'rxjs';
+import { delay, firstValueFrom, map, of, race } from 'rxjs';
 
 @Processor('http-task')
 export class HttpTaskProcessor extends WorkerHost {
@@ -20,9 +20,6 @@ export class HttpTaskProcessor extends WorkerHost {
       ...job?.data?.options,
     };
     const response$ = race(
-      // throwError(() => new Error('Timeout!')).pipe(
-      //   delay(30_000),
-      // ),
       of({ data: { error: 'Timeout!!!' } }).pipe(
         delay(job?.data?.timeout || 30_000),
       ),
@@ -36,14 +33,6 @@ export class HttpTaskProcessor extends WorkerHost {
       }),
     );
     return firstValueFrom(response$);
-
-    // const timedResponse = await Promise.race([
-    //   this.timeout(job?.data?.timeout || 30_000),
-    //   this.httpService.request(requestConfig),
-    //   // fetch(job?.data?.url, job?.data?.options),
-    // ]);
-    // const response = await timedResponse;
-    // return response?.text();
   }
 
   async timeout(ms: number) {

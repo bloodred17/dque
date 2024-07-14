@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { BullModule } from '@nestjs/bullmq';
-import { AppProcessor } from './app.processor';
 import { HttpTaskModule } from './http-task/http-task.module';
 import { HttpModule } from '@nestjs/axios';
 
@@ -17,12 +15,9 @@ import { HttpModule } from '@nestjs/axios';
         password: 'password',
       },
     }),
-    BullModule.registerQueue({
-      name: 'main',
-    }),
     HttpTaskModule,
   ],
   controllers: [AppController],
-  providers: [AppProcessor, AppService],
+  providers: [],
 })
 export class AppModule {}
