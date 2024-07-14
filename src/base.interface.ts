@@ -1,4 +1,6 @@
-import { Webhook } from './webhook/webhook.service';
+import { AxiosRequestConfig } from 'axios';
+
+export type Webhook = AxiosRequestConfig;
 
 export interface BaseJobData {
   name: string;

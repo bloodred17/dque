@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { HttpTaskController } from './http-task.controller';
 import { HttpTaskProcessor } from './http-task.processor';
-import { WebhookModule } from '../webhook/webhook.module';
 import { HttpModule } from '@nestjs/axios';
+import { WebhookService } from '../services/webhook.service';
+import { RequestService } from '../services/request.service';
 
 @Module({
   imports: [
@@ -11,9 +12,8 @@ import { HttpModule } from '@nestjs/axios';
       name: 'http-task',
     }),
     HttpModule,
-    WebhookModule,
   ],
   controllers: [HttpTaskController],
-  providers: [HttpTaskProcessor],
+  providers: [HttpTaskProcessor, WebhookService, RequestService],
 })
 export class HttpTaskModule {}

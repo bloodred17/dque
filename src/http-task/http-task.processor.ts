@@ -1,15 +1,16 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { HttpTaskDto } from './http-task.dto';
-import { HttpService } from '@nestjs/axios';
 import { AxiosRequestConfig } from 'axios';
-import { delay, firstValueFrom, map, of, race } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
+import { WebhookService } from '../services/webhook.service';
+import { RequestService } from '../services/request.service';
 
 @Processor('http-task')
 export class HttpTaskProcessor extends WorkerHost {
   constructor(
-    private readonly httpService: HttpService,
-    // private readonly webhookService: WebhookService
+    private readonly webhookService: WebhookService,
+    private readonly requestService: RequestService,
   ) {
     super();
   }
@@ -19,33 +20,20 @@ export class HttpTaskProcessor extends WorkerHost {
       url: job?.data?.url,
       ...job?.data?.options,
     };
-    const response$ = race(
-      of({ data: { error: 'Timeout!!!' } }).pipe(
-        delay(job?.data?.timeout || 30_000),
-      ),
-      this.httpService.request(requestConfig),
-    ).pipe(
-      map((response) => {
-        if (response?.data?.error) {
-          throw new Error(response?.data?.error);
-        }
-        return response?.data;
-      }),
-    );
+    const response$ = this.requestService
+      .timedRequest(requestConfig, job?.data?.timeout || 30_000)
+      .pipe(map((response) => response?.data));
     return firstValueFrom(response$);
-  }
-
-  async timeout(ms: number) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => reject('TIMEOUT!'), ms);
-    });
   }
 
   @OnWorkerEvent('completed')
   onCompleted(job: Job<HttpTaskDto>) {
     console.log('job has completed', job.name, job.returnvalue);
-    if (job?.data?.webhooks) {
-      // this.webhookService.triggerWebhook(job?.data?.webhooks, job?.returnvalue);
+    if (job?.data?.webhooks && job?.data?.webhooks?.length > 0) {
+      this.webhookService
+        .triggerWebhook(job?.data?.webhooks, job?.returnvalue || {})
+        .subscribe()
+        .unsubscribe();
     }
   }
 
